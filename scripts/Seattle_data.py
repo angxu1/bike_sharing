@@ -18,9 +18,9 @@ def getgeodist(lng1,lng2,lat1,lat2):
 
 def getgeodist_arr(lng1,lng2,lat1,lat2):
   '''
-  Compute the geometrical distance between two locations given the corresponding longitudes and latitudes
-  lng1,lng2: the longitude of location 1 and location 2 
-  lat1,lat2: the latitude of location 1 and location 2 
+  Compute the Haversine distances between two locations given the corresponding longitudes and latitudes
+  lng1,lng2: the longitudes of locations 1 and locations 2 
+  lat1,lat2: the latitudes of locations 1 and locations 2 
   '''
   lng1 = lng1/180*np.pi
   lng2 = lng2/180*np.pi
