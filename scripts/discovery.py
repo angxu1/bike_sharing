@@ -2,7 +2,7 @@ import numpy as np
 
 def calgrad(book_num,s,num_position,beta0,beta1,choice_prob,all_period,weight,dist_new,bike_num,num_records,book_bike,book_index):
   '''
-  Compute the partial derivative of the new location under the current weight. Larger partial derivative indicates a better potentiality
+  Compute the partial derivative of the new location under the current weight. Larger partial derivative indicates a better potential
   to improve the log-likelihood function value in the EM iteration.
   new_loc: (n,2), n is num of new candidate locatios
   dist_new: distance matrix of cand locs
