@@ -46,7 +46,7 @@ def caldist(loc,bike_loc,bike_num):
     dist = np.sqrt(np.sum((loc-bike_loc)**2,axis=3))
     return dist
 
-def findd(beta0,beta1,p_olds,f_old,N_oldy,dist,dist1,book_index,book_bike,all_period):
+def findd(beta0,beta1,p_olds,f_old,N_old,dist,dist1,book_index,book_bike,all_period):
   '''
   Compute the partial derivative with respect to beta1 when beta1 is not given. When the partial derivative value is zero, we know beta1 
   is the maximizer in the current EM update. This is a helper function in using the binary search method to find beta1.
@@ -54,10 +54,10 @@ def findd(beta0,beta1,p_olds,f_old,N_oldy,dist,dist1,book_index,book_bike,all_pe
   p_j0tx = 1/(1+np.sum(np.exp(beta0+beta1*dist[:,book_index,:]),axis=2))
   p_j0t = 1/(1+np.sum(np.exp(beta0+beta1*dist),axis=2))
   return np.sum(np.sum(p_olds*(dist[:,book_index,book_bike]-p_j0tx*np.sum(dist1[:,book_index,:]*np.exp(beta0+beta1*dist[:,book_index,:]),axis=2)),axis=1) - \
-        N_oldy*np.sum(f_old*p_j0t*np.sum(dist1*np.exp(beta0+beta1*dist),axis=2)*all_period,axis=1))
+        N_old*np.sum(f_old*p_j0t*np.sum(dist1*np.exp(beta0+beta1*dist),axis=2)*all_period,axis=1))
 
 def findw_EM(cur_locnum,loc,beta0,bike_num,num_records,bike_loc,book_bike,num_booked,
-             book_index,all_period,T,thres=5e-3, beta1 = -1, dist_old=None):
+             book_index,all_period,T,thres=5e-3, beta1 = -1, dist_old=None, rec_iter=False):
   '''
   Find the weight vector w using the EM algorithm. We start with a weight vector where all elements are the same and then iteratively
   update the weigth vector w until the L-1 norm of the difference of two consecutive updates is less than some threshold.
@@ -67,6 +67,7 @@ def findw_EM(cur_locnum,loc,beta0,bike_num,num_records,bike_loc,book_bike,num_bo
   w = w.reshape(1,-1)
   beta1 = np.repeat(beta1,cur_locnum).reshape(-1,1)
   w_diff = np.inf
+  num_iter = 0
   if dist_old is None:
     dist_old = caldist(loc,bike_loc,bike_num)
   while (w_diff > thres):
@@ -79,11 +80,14 @@ def findw_EM(cur_locnum,loc,beta0,bike_num,num_records,bike_loc,book_bike,num_bo
     p_olds = p_old[:,book_bike+1,book_index]*np.reshape(w_old,(-1,1))/np.reshape(np.sum(np.reshape(w_old,(-1,1))*p_old[:,book_bike+1,book_index],axis=0),(1,-1))
     p_oldsj0 = w_old*np.sum(p_old[:,0,:]*all_period,axis=1)/np.sum(w_old*np.sum(p_old[:,0,:]*all_period,axis=1))
     s_old = np.sum((1-np.sum(np.expand_dims(w_old,1)*(1/(1+np.sum(np.exp(beta0+np.reshape(beta1,(-1,1,1))*dist_old),axis=2))),axis=0))*all_period)
-    N_oldy = num_booked*(T-s_old)/s_old
-    c = np.sum(p_olds,axis=1)+N_oldy*p_oldsj0
+    N_old = num_booked*(T-s_old)/s_old
+    c = np.sum(p_olds,axis=1)+N_old*p_oldsj0
     w_star = np.reshape(c/np.sum(c),(1,-1))
     w = np.concatenate((w,w_star),axis=0)
     w_diff = np.sum(np.abs(w[-1]-w[-2]))
+    num_iter = num_iter+1
+  if rec_iter:
+    return num_iter, w[-1]
   return w[-1]
 
 def findbetaw_EM(cur_locnum,loc,beta0,beta1,bike_num,num_records,bike_loc,book_bike,num_booked,book_index,all_period,T,thres=5e-3):
@@ -110,16 +114,16 @@ def findbetaw_EM(cur_locnum,loc,beta0,beta1,bike_num,num_records,bike_loc,book_b
     p_olds = p_old[:,book_bike+1,book_index]*np.reshape(w_old,(-1,1))/np.reshape(np.sum(np.reshape(w_old,(-1,1))*p_old[:,book_bike+1,book_index],axis=0),(1,-1))
     p_oldsj0 = w_old*np.sum(p_old[:,0,:]*all_period,axis=1)/np.sum(w_old*np.sum(p_old[:,0,:]*all_period,axis=1))
     s_old = np.sum((1-np.sum(np.expand_dims(w_old,1)*(1/(1+np.sum(np.exp(beta0+beta1*dist_old),axis=2))),axis=0))*all_period)
-    N_oldy = num_booked*(T-s_old)/s_old
-    c = np.sum(p_olds,axis=1)+N_oldy*p_oldsj0
+    N_old = num_booked*(T-s_old)/s_old
+    c = np.sum(p_olds,axis=1)+N_old*p_oldsj0
     w_star = np.reshape(c/np.sum(c),(1,-1))
     w = np.concatenate((w,w_star),axis=0)
-    beta1_star = findbeta1em(p_olds,f_old,N_oldy,beta0,dist_old,book_index,book_bike,all_period,thres=1e-3)
+    beta1_star = findbeta1em(p_olds,f_old,N_old,beta0,dist_old,book_index,book_bike,all_period,thres=1e-3)
     beta1 = beta1_star
     w_diff = np.sum(np.abs(w[-1]-w[-2]))
   return beta1, w[-1]
 
-def findbeta1em(p_olds,f_old,N_oldy,beta0,dist,book_index,book_bike,all_period,minval=-20.0,maxval=-1e-8,thres=2*1e-4):
+def findbeta1em(p_olds,f_old,N_old,beta0,dist,book_index,book_bike,all_period,minval=-20.0,maxval=-1e-8,thres=2*1e-4):
   '''
   Use binary Search to find the value of beta1. We naturally assume that beta1 is smaller than 0. We give an initial bound of beta1 and 
   repeatedly bisecting the interval until the absolute value of the partial derivative with respect to beta1 is less than a threshold.
@@ -128,8 +132,8 @@ def findbeta1em(p_olds,f_old,N_oldy,beta0,dist,book_index,book_bike,all_period,m
   dist1[dist1==np.inf] = 0
   beta1min = minval
   beta1max = maxval
-  dmax = findd(beta0,beta1min,p_olds,f_old,N_oldy,dist,dist1,book_index,book_bike,all_period)
-  dmin = findd(beta0,beta1max,p_olds,f_old,N_oldy,dist,dist1,book_index,book_bike,all_period)
+  dmax = findd(beta0,beta1min,p_olds,f_old,N_old,dist,dist1,book_index,book_bike,all_period)
+  dmin = findd(beta0,beta1max,p_olds,f_old,N_old,dist,dist1,book_index,book_bike,all_period)
   if (dmin>=0):
     beta1min = beta1max
     warnings.warn("warning:beta1 too large")
@@ -140,7 +144,7 @@ def findbeta1em(p_olds,f_old,N_oldy,beta0,dist,book_index,book_bike,all_period,m
   beta1 = beta1min
   while (np.any(abs(d)>thres)):
     beta1 = (beta1min+beta1max)/2
-    d = findd(beta0,beta1,p_olds,f_old,N_oldy,dist,dist1,book_index,book_bike,all_period)
+    d = findd(beta0,beta1,p_olds,f_old,N_old,dist,dist1,book_index,book_bike,all_period)
     if (dmin<0 and dmax>0):
       if (d<0):
         beta1max = beta1

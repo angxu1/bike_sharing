@@ -4,20 +4,6 @@ from datetime import datetime, date, time
 
 def getgeodist(lng1,lng2,lat1,lat2):
   '''
-  Compute the Haversine distance between two locations given the corresponding longitudes and latitudes
-  lng1,lng2: the longitude of location 1 and location 2 
-  lat1,lat2: the latitude of location 1 and location 2 
-  '''
-  lng1 = lng1/180*np.pi
-  lng2 = lng2/180*np.pi
-  lat1 = lat1/180*np.pi
-  lat2 = lat2/180*np.pi
-  a = np.sin((lat2-lat1) / 2)**2 + np.cos(lat1) * np.cos(lat2) * np.sin((lng2-lng1)/2)**2
-  c = 2 * 6373 * np.arctan2(np.sqrt(a), np.sqrt(1 - a))
-  return c
-
-def getgeodist_arr(lng1,lng2,lat1,lat2):
-  '''
   Compute the Haversine distances between two locations given the corresponding longitudes and latitudes
   lng1,lng2: the longitudes of locations 1 and locations 2 
   lat1,lat2: the latitudes of locations 1 and locations 2 
@@ -26,10 +12,11 @@ def getgeodist_arr(lng1,lng2,lat1,lat2):
   lng2 = lng2/180*np.pi
   lat1 = lat1/180*np.pi
   lat2 = lat2/180*np.pi
-  lng1 = lng1.reshape(1,-1)
-  lng2 = lng2.reshape(-1,1)
-  lat1 = lat1.reshape(1,-1)
-  lat2 = lat2.reshape(-1,1)
+  if not (np.isscalar(lng1) and np.isscalar(lng2) and np.isscalar(lat1) and np.isscalar(lat2)):
+    lng1 = lng1.reshape(1,-1)
+    lng2 = lng2.reshape(-1,1)
+    lat1 = lat1.reshape(1,-1)
+    lat2 = lat2.reshape(-1,1)
   a = np.sin((lat2-lat1) / 2)**2 + np.cos(lat1) * np.cos(lat2) * np.sin((lng2-lng1)/2)**2
   c = 2 * 6373 * np.arctan2(np.sqrt(a), np.sqrt(1 - a))
   return c
@@ -89,7 +76,7 @@ def rent_record(df):
 def caldist2(loc,num_position,df_rent,num_records,bike_num,x0,y0):
   loc = loc.reshape(1,-1,2)
   dist = np.zeros((num_position,num_records,bike_num))
-  dist[:,0,:] = getgeodist_arr(x0,loc[0,:,0],y0,loc[0,:,1])
+  dist[:,0,:] = getgeodist(x0,loc[0,:,0],y0,loc[0,:,1])
   for i in range(1,num_records):
     dist[:,i,:] = dist[:,i-1,:]
     cur_rec = df_rent.loc[i-1,:]
