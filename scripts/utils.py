@@ -15,8 +15,7 @@ def plot_density(loc,w,loc_bound):
 
 def find_wasserstein(loc1,loc2,w1,w2):
     '''
-    Compute the second moment Wasserstein distance between two sets of weighted locations. The Wasserstein distance in our case is a
-    linear programming, which can be easily solved by linprog function in scipy package.
+    Compute the second moment Wasserstein distance between two sets of weighted locations.
     loc1,loc2: location sets that contains the coordinate of each location 
     w1,w2: weight vectors of the corresponding location set
     '''
