@@ -5,3 +5,7 @@ cvxpy==1.1.15
 bokeh==2.4.0
 geopy==2.3.0
 tqdm==4.64.1
+geopandas==0.12.2
+geojson==3.1.0
+shapely==1.8.5
+statsmodels==0.14.1

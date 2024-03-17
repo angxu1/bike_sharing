@@ -46,7 +46,7 @@ def caldist(loc,bike_loc,bike_num):
     dist = np.sqrt(np.sum((loc-bike_loc)**2,axis=3))
     return dist
 
-def findd(beta0,beta1,p_olds,f_old,N_old,dist,dist1,book_index,book_bike,all_period):
+def findd(beta0,beta1,p_olds,f_old,N_oldy,dist,dist1,book_index,book_bike,all_period):
   '''
   Compute the partial derivative with respect to beta1 when beta1 is not given. When the partial derivative value is zero, we know beta1 
   is the maximizer in the current EM update. This is a helper function in using the binary search method to find beta1.
@@ -54,20 +54,20 @@ def findd(beta0,beta1,p_olds,f_old,N_old,dist,dist1,book_index,book_bike,all_per
   p_j0tx = 1/(1+np.sum(np.exp(beta0+beta1*dist[:,book_index,:]),axis=2))
   p_j0t = 1/(1+np.sum(np.exp(beta0+beta1*dist),axis=2))
   return np.sum(np.sum(p_olds*(dist[:,book_index,book_bike]-p_j0tx*np.sum(dist1[:,book_index,:]*np.exp(beta0+beta1*dist[:,book_index,:]),axis=2)),axis=1) - \
-        N_old*np.sum(f_old*p_j0t*np.sum(dist1*np.exp(beta0+beta1*dist),axis=2)*all_period,axis=1))
+        N_oldy*np.sum(f_old*p_j0t*np.sum(dist1*np.exp(beta0+beta1*dist),axis=2)*all_period,axis=1))
 
 def findw_EM(cur_locnum,loc,beta0,bike_num,num_records,bike_loc,book_bike,num_booked,
-             book_index,all_period,T,thres=5e-3, beta1 = -1, dist_old=None, rec_iter=False):
+             book_index,all_period,T,thres=5e-3, beta1 = -1, dist_old=None,prior_weight=None):
+  
   '''
-  Find the weight vector w using the EM algorithm. We start with a weight vector where all elements are the same and then iteratively
-  update the weigth vector w until the L-1 norm of the difference of two consecutive updates is less than some threshold.
+  Find the weigtht vector w using the EM algorithm. We start with a weight vector where all elements are the same and then iteratively
+  update the weight vector w until the L-1 norm of the difference of two consecutive updates is less than some threshold.
   '''
   w = np.random.uniform(0,1,cur_locnum)
   w = w/np.sum(w)
   w = w.reshape(1,-1)
   beta1 = np.repeat(beta1,cur_locnum).reshape(-1,1)
   w_diff = np.inf
-  num_iter = 0
   if dist_old is None:
     dist_old = caldist(loc,bike_loc,bike_num)
   while (w_diff > thres):
@@ -80,14 +80,13 @@ def findw_EM(cur_locnum,loc,beta0,bike_num,num_records,bike_loc,book_bike,num_bo
     p_olds = p_old[:,book_bike+1,book_index]*np.reshape(w_old,(-1,1))/np.reshape(np.sum(np.reshape(w_old,(-1,1))*p_old[:,book_bike+1,book_index],axis=0),(1,-1))
     p_oldsj0 = w_old*np.sum(p_old[:,0,:]*all_period,axis=1)/np.sum(w_old*np.sum(p_old[:,0,:]*all_period,axis=1))
     s_old = np.sum((1-np.sum(np.expand_dims(w_old,1)*(1/(1+np.sum(np.exp(beta0+np.reshape(beta1,(-1,1,1))*dist_old),axis=2))),axis=0))*all_period)
-    N_old = num_booked*(T-s_old)/s_old
-    c = np.sum(p_olds,axis=1)+N_old*p_oldsj0
+    N_oldy = num_booked*(T-s_old)/s_old
+    c = np.sum(p_olds,axis=1)+N_oldy*p_oldsj0
+    if prior_weight is not None:
+      c = c+prior_weight
     w_star = np.reshape(c/np.sum(c),(1,-1))
     w = np.concatenate((w,w_star),axis=0)
     w_diff = np.sum(np.abs(w[-1]-w[-2]))
-    num_iter = num_iter+1
-  if rec_iter:
-    return num_iter, w[-1]
   return w[-1]
 
 def findbetaw_EM(cur_locnum,loc,beta0,beta1,bike_num,num_records,bike_loc,book_bike,num_booked,book_index,all_period,T,thres=5e-3):
@@ -114,16 +113,16 @@ def findbetaw_EM(cur_locnum,loc,beta0,beta1,bike_num,num_records,bike_loc,book_b
     p_olds = p_old[:,book_bike+1,book_index]*np.reshape(w_old,(-1,1))/np.reshape(np.sum(np.reshape(w_old,(-1,1))*p_old[:,book_bike+1,book_index],axis=0),(1,-1))
     p_oldsj0 = w_old*np.sum(p_old[:,0,:]*all_period,axis=1)/np.sum(w_old*np.sum(p_old[:,0,:]*all_period,axis=1))
     s_old = np.sum((1-np.sum(np.expand_dims(w_old,1)*(1/(1+np.sum(np.exp(beta0+beta1*dist_old),axis=2))),axis=0))*all_period)
-    N_old = num_booked*(T-s_old)/s_old
-    c = np.sum(p_olds,axis=1)+N_old*p_oldsj0
+    N_oldy = num_booked*(T-s_old)/s_old
+    c = np.sum(p_olds,axis=1)+N_oldy*p_oldsj0
     w_star = np.reshape(c/np.sum(c),(1,-1))
     w = np.concatenate((w,w_star),axis=0)
-    beta1_star = findbeta1em(p_olds,f_old,N_old,beta0,dist_old,book_index,book_bike,all_period,thres=1e-3)
+    beta1_star = findbeta1em(p_olds,f_old,N_oldy,beta0,dist_old,book_index,book_bike,all_period,thres=1e-3)
     beta1 = beta1_star
     w_diff = np.sum(np.abs(w[-1]-w[-2]))
   return beta1, w[-1]
 
-def findbeta1em(p_olds,f_old,N_old,beta0,dist,book_index,book_bike,all_period,minval=-20.0,maxval=-1e-8,thres=2*1e-4):
+def findbeta1em(p_olds,f_old,N_oldy,beta0,dist,book_index,book_bike,all_period,minval=-20.0,maxval=-1e-8,thres=2*1e-4):
   '''
   Use binary Search to find the value of beta1. We naturally assume that beta1 is smaller than 0. We give an initial bound of beta1 and 
   repeatedly bisecting the interval until the absolute value of the partial derivative with respect to beta1 is less than a threshold.
@@ -132,8 +131,8 @@ def findbeta1em(p_olds,f_old,N_old,beta0,dist,book_index,book_bike,all_period,mi
   dist1[dist1==np.inf] = 0
   beta1min = minval
   beta1max = maxval
-  dmax = findd(beta0,beta1min,p_olds,f_old,N_old,dist,dist1,book_index,book_bike,all_period)
-  dmin = findd(beta0,beta1max,p_olds,f_old,N_old,dist,dist1,book_index,book_bike,all_period)
+  dmax = findd(beta0,beta1min,p_olds,f_old,N_oldy,dist,dist1,book_index,book_bike,all_period)
+  dmin = findd(beta0,beta1max,p_olds,f_old,N_oldy,dist,dist1,book_index,book_bike,all_period)
   if (dmin>=0):
     beta1min = beta1max
     warnings.warn("warning:beta1 too large")
@@ -144,7 +143,7 @@ def findbeta1em(p_olds,f_old,N_old,beta0,dist,book_index,book_bike,all_period,mi
   beta1 = beta1min
   while (np.any(abs(d)>thres)):
     beta1 = (beta1min+beta1max)/2
-    d = findd(beta0,beta1,p_olds,f_old,N_old,dist,dist1,book_index,book_bike,all_period)
+    d = findd(beta0,beta1,p_olds,f_old,N_oldy,dist,dist1,book_index,book_bike,all_period)
     if (dmin<0 and dmax>0):
       if (d<0):
         beta1max = beta1
@@ -161,7 +160,7 @@ def findprob0(dist_cur,genpos,beta0,beta1):
   return 1/(1+np.sum(np.exp(beta0+beta1*dist_cur[genpos,:])))
 
 
-def gen_sync(rand_seed,num_position,bike_num,lambd,grid_size,beta0=1,beta1_true=-1,T=50,loc_bound=5):  
+def gen_sync(rand_seed,num_position,bike_num,lambd,grid_size,beta0=1,beta1_true=-1,T=50,loc_bound=5,split_data=False):  
   '''
   Generate an instance of synthetic data and return all relevant booking information.
   Arrival locations are generated uniformly within the range [-0.8*loc_bound, 0.8*loc_bound].
@@ -171,6 +170,7 @@ def gen_sync(rand_seed,num_position,bike_num,lambd,grid_size,beta0=1,beta1_true=
   grid_size: grid size of the candidate location
   beta0, beta1: MNL model parameter
   loc_bound: bound of the bike locations and arrival locations
+  split_data: whether split the data into train/test set
   '''
   np.random.seed(seed=rand_seed)
   posx = np.random.uniform(-4*loc_bound/5,4*loc_bound/5,num_position)
@@ -207,7 +207,7 @@ def gen_sync(rand_seed,num_position,bike_num,lambd,grid_size,beta0=1,beta1_true=
   k1 = 0
   xi = np.array([])
   yi = np.array([])
-
+    
   while (i < tot_time.shape[0]):
     i = i + 1
     if tot_time[i-1] in finish_time:
@@ -246,7 +246,24 @@ def gen_sync(rand_seed,num_position,bike_num,lambd,grid_size,beta0=1,beta1_true=
   book_finish_time = np.sort(np.concatenate((book_time,finish_time)))
   all_period = np.append(book_finish_time,[T])-np.append([0],book_finish_time)
   num_records = dist.shape[1]
-
+  if split_data:
+    time_portion = 0.8
+    book_finish_time_train = book_finish_time[book_finish_time<time_portion*T]
+    book_finish_time_test = book_finish_time[book_finish_time>=time_portion*T]
+    train_period = np.append(book_finish_time_train,[time_portion*T])-np.append([0],book_finish_time_train)
+    test_period = np.append(book_finish_time_test,[T])-np.append([time_portion*T],book_finish_time_test)
+    num_records_train = train_period.shape[0]
+    num_records_test = test_period.shape[0]
+    num_booked_train = book_time[book_time<time_portion*T].shape[0]
+    num_booked_test = num_booked-num_booked_train
+    
+    train_data = [bike_num,num_records_train,book_bike[:num_booked_train],book_index[:num_booked_train],dist[:,:num_records_train,:],
+                  bike_loc[:num_records_train,:,:],train_period,num_booked_train,cand_loc,true_loc,position_weight]
+    test_data = [bike_num,num_records_test,book_bike[num_booked_train:],book_index[num_booked_train:]-num_records_train+1,dist[:,(num_records_train-1):,:],
+                  bike_loc[(num_records_train-1):,:,:],test_period,num_booked_test,cand_loc,true_loc,position_weight]
+ 
+    return (train_data,test_data)
+    
   return(bike_num,num_records,book_bike,book_index,dist,bike_loc,all_period,num_booked,cand_loc,true_loc,position_weight)
 
 def gen_sync_in_grid(rand_seed,num_position,bike_num,lambd,grid_size,beta0=1,beta1_true=-1,T=50,loc_bound=5):
@@ -328,3 +345,15 @@ def gen_sync_in_grid(rand_seed,num_position,bike_num,lambd,grid_size,beta0=1,bet
   all_period = np.append(book_finish_time,[T])-np.append([0],book_finish_time)
   num_records = dist.shape[1]
   return true_pos_ind,bike_num,num_records,book_bike,book_index,dist,bike_loc,all_period,num_booked,cand_loc,true_loc,position_weight
+
+def g(w,choice_prob,book_bike,book_index):
+    g = np.sum(np.log(np.sum(w.reshape(-1,1)*(choice_prob[:,book_bike+1,book_index]),axis=0)))
+    return g
+
+def h(w,choice_prob,all_period,num_booked):
+    h = num_booked * np.log(np.sum((1-np.sum(w.reshape(-1,1)*choice_prob[:,0,:],axis=0))*all_period))
+    return h
+
+def find_grad_g(w,choice_prob,book_bike,book_index):
+    grad_g = np.sum(choice_prob[:,book_bike+1,book_index]/np.sum(w.reshape(-1,1)*(choice_prob[:,book_bike+1,book_index]),axis=0),axis=1)
+    return grad_g

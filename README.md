@@ -33,11 +33,11 @@ The `locations_sim_allin.ipynb` notebook demonstrates the performance of the all
 
 ### locations_sim_discovery.ipynb
 
-The `locations_sim_discovery.ipynb` notebook demonstrates the performance of the location-discovery algorithm (for both single and batch mode) proposed in the paper. 
+The `locations_sim_discovery.ipynb` notebook demonstrates the performance of the location-discovery algorithm (for both single and batch modes) proposed in the paper. 
 
 ### bikesharing_seattle_data.ipynb
 
-The `bikesharing_seattle_data.ipynb` notebook carries out an analysis based on real industrial data. The original data set records all bookings in a bike-sharing company in the Seattle region during July 2019. The data are preprocessed to reserve bookings only around Seattle’s downtown area where bike rental is
+The `bikesharing_seattle_data.ipynb` notebook carries out an analysis based on real industrial data. The original data set records all bookings in a bike-sharing company in the Seattle region during July and August 2019. The data are preprocessed to reserve bookings only around Seattle’s downtown area where bike rental is
 popular and the population is dense. We implement the all-in algorithm and location-discovery algoirthm to discover potential arrival locations. 
 
 ## Seattle Dockless Bike-sharing Data Description
