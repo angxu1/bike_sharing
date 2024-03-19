@@ -19,7 +19,7 @@ To install the necessary packages for this project, you can use pip to install t
 ```
 pip install -r requirements.txt
 ```
-Once you have all the required packages installed, you can open the Jupyter notebooks and run the code.
+Once you install all the required packages, you can open the Jupyter notebooks and run the code.
 
 ## Usage
 
@@ -37,12 +37,11 @@ The `locations_sim_discovery.ipynb` notebook demonstrates the performance of the
 
 ### bikesharing_seattle_data.ipynb
 
-The `bikesharing_seattle_data.ipynb` notebook carries out an analysis based on real industrial data. The original data set records all bookings in a bike-sharing company in the Seattle region during July and August 2019. The data are preprocessed to reserve bookings only around Seattle’s downtown area where bike rental is
-popular and the population is dense. We implement the all-in algorithm and location-discovery algoirthm to discover potential arrival locations. 
+The `bikesharing_seattle_data.ipynb` notebook carries out an analysis based on real industrial data. The original data set records all bookings in a bike-sharing company in the Seattle region during July and August 2019. The data are preprocessed to reserve bookings only around Seattle’s downtown area where bike rental is popular and the population is dense. We implement a mixed-effects model, the all-in algorithm, and the location-discovery algorithm on this data set. 
 
 ## Seattle Dockless Bike-sharing Data Description
 
-The data set records relevant booking information in a bike-sharing company in the Seattle region during July 2019. It tracks the movement of each bike in the system, including the bike id, the time of the recorded data, the longitude and latitude of the bike, and the state of the bike. The dataset can be used to analyze bike usage patterns, identify areas of high demand for bike rentals, and track the availability of bikes in real-time. Specifically, the dataset has the following columns:
+The data set records relevant booking information in a bike-sharing company in the Seattle region during July and August 2019. It tracks the movement of each bike in the system, including the bike id, the time of the recorded data, the longitude and latitude of the bike, and the state of the bike. The dataset can be used to analyze bike usage patterns, identify areas of high demand for bike rentals, and track the availability of bikes in real time. Specifically, the dataset has the following columns:
 
 1. `index`: Unique identifier for each data record
 2. `bike_id`: Unique identifier for each bike in the system
