@@ -1,6 +1,7 @@
 import numpy as np
+import time
 
-def calgrad(book_num,s,num_position,beta0,beta1,choice_prob,all_period,weight,dist_new,bike_num,num_records,book_bike,book_index):
+def calgrad(book_num,s,num_position,beta0,beta1,choice_prob,all_period,weight,dist_new,bike_num,num_records,book_bike,book_index,dTmode=False):
   '''
   Compute the partial derivative of the new location under the current weight. Larger partial derivative indicates a better potential
   to improve the log-likelihood function value in the EM iteration.
@@ -12,8 +13,13 @@ def calgrad(book_num,s,num_position,beta0,beta1,choice_prob,all_period,weight,di
   prob_new = np.zeros((num_position,bike_num+1,num_records))
   prob_new[:,0,:] = 1/(1+np.sum(np.exp(beta0+beta1*dist_new),axis=2))
   prob_new[:,1:,:] = np.exp(beta0+beta1*np.transpose(dist_new,(0,2,1)))/(1+np.sum(np.exp(beta0+beta1*dist_new),axis=2)).reshape(num_position,1,-1)
-  return book_num/s*np.sum(prob_new[:,0,:]*all_period,axis=1) + \
+  T1 = time.time()
+  grad = book_num/s*np.sum(prob_new[:,0,:]*all_period,axis=1) + \
     np.sum(prob_new[:,book_bike+1,book_index]/np.sum(weight*choice_prob[:,book_bike+1,book_index],axis=0).reshape(1,-1),axis=1)
+  T2 = time.time()
+  if dTmode:
+     return grad, T2-T1
+  return grad
 
 def findchoice_prob(cur_locnum,cur_dist,beta0,beta1,num_records,bike_num):
   '''

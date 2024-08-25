@@ -70,16 +70,19 @@ def findw_EM(cur_locnum,loc,beta0,bike_num,num_records,bike_loc,book_bike,num_bo
   w_diff = np.inf
   if dist_old is None:
     dist_old = caldist(loc,bike_loc,bike_num)
+  p_old = np.zeros((cur_locnum,bike_num+1,num_records))
+  p_old[:,0,:] = 1/(1+np.sum(np.exp(beta0+np.reshape(beta1,(-1,1,1))*dist_old),axis=2))
+  p_old[:,1:,:] = np.exp(beta0+np.reshape(beta1,(-1,1,1))*np.transpose(dist_old,(0,2,1)))/ \
+    np.reshape((1+np.sum(np.exp(beta0+np.reshape(beta1,(-1,1,1))*dist_old),axis=2)),(cur_locnum,1,-1))
+  p1 = np.sum(p_old[:,0,:]*all_period,axis=1)
+  p2 = (1/(1+np.sum(np.exp(beta0+np.reshape(beta1,(-1,1,1))*dist_old),axis=2)))
   while (w_diff > thres):
-    p_old = np.zeros((cur_locnum,bike_num+1,num_records))
     p_olds = np.zeros((cur_locnum,num_booked))
     w_old = w[-1,:]
-    p_old[:,0,:] = 1/(1+np.sum(np.exp(beta0+np.reshape(beta1,(-1,1,1))*dist_old),axis=2))
-    p_old[:,1:,:] = np.exp(beta0+np.reshape(beta1,(-1,1,1))*np.transpose(dist_old,(0,2,1)))/ \
-      np.reshape((1+np.sum(np.exp(beta0+np.reshape(beta1,(-1,1,1))*dist_old),axis=2)),(cur_locnum,1,-1))
-    p_olds = p_old[:,book_bike+1,book_index]*np.reshape(w_old,(-1,1))/np.reshape(np.sum(np.reshape(w_old,(-1,1))*p_old[:,book_bike+1,book_index],axis=0),(1,-1))
-    p_oldsj0 = w_old*np.sum(p_old[:,0,:]*all_period,axis=1)/np.sum(w_old*np.sum(p_old[:,0,:]*all_period,axis=1))
-    s_old = np.sum((1-np.sum(np.expand_dims(w_old,1)*(1/(1+np.sum(np.exp(beta0+np.reshape(beta1,(-1,1,1))*dist_old),axis=2))),axis=0))*all_period)
+    p0 = p_old[:,book_bike+1,book_index]*np.reshape(w_old,(-1,1))
+    p_olds = p0/np.reshape(np.sum(p0,axis=0),(1,-1))
+    p_oldsj0 = w_old*p1/np.sum(w_old*p1)
+    s_old = np.sum((1-np.sum(np.expand_dims(w_old,1)*p2,axis=0))*all_period)
     N_oldy = num_booked*(T-s_old)/s_old
     c = np.sum(p_olds,axis=1)+N_oldy*p_oldsj0
     if prior_weight is not None:

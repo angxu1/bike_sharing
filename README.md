@@ -9,9 +9,11 @@ This repository contains relevant source code to reproduce all experiments in th
 - [Installation](#installation)
 - [Usage](#usage)
   - [locations_sim_EM_MM.ipynb](#locations_sim_em_mmipynb)
+  - [EM_MM_comparison.ipynb](#em_mm_comparisonipynb)
   - [locations_sim_allin.ipynb](#locations_sim_allinipynb)
   - [locations_sim_discovery.ipynb](#locations_sim_discoveryipynb)
   - [bikesharing_seattle_data.ipynb](#bikesharing_seattle_dataipynb)
+  - [block_partition_test.ipynb](#block_partition_testipynb)
 
 ## Installation
 
@@ -25,7 +27,10 @@ Once you install all the required packages, you can open the Jupyter notebooks a
 
 ### locations_sim_EM_MM.ipynb
 
-The `locations_sim_EM_MM.ipynb` notebook compares the EM algorithm with the MM algorithm in estimating the location weights given that the underlying locations are in a large candidate location set. 
+The `locations_sim_EM_MM.ipynb` notebook implements the EM algorithm and the MM algorithm in estimating the location weights given that the underlying locations are in a large candidate location set. 
+
+### EM_MM_comparison.ipynb
+The `EM_MM_comparison.ipynb` notebook compares the performance between the EM and MM algorithms. The notebook reproduces table 1 in the paper.
 
 ### locations_sim_allin.ipynb
 
@@ -37,7 +42,10 @@ The `locations_sim_discovery.ipynb` notebook demonstrates the performance of the
 
 ### bikesharing_seattle_data.ipynb
 
-The `bikesharing_seattle_data.ipynb` notebook carries out an analysis based on real industrial data. The original data set records all bookings in a bike-sharing company in the Seattle region during July and August 2019. The data are preprocessed to reserve bookings only around Seattle’s downtown area where bike rental is popular and the population is dense. We implement a mixed-effects model, the all-in algorithm, and the location-discovery algorithm on this data set. 
+The `bikesharing_seattle_data.ipynb` notebook carries out an analysis based on real industrial data. The original data set records all bookings in a bike-sharing company in the Seattle region during July and August 2019. The data are preprocessed to reserve bookings only around Seattle’s downtown area where bike rental is popular and the population is dense. We implement a mixed-effects model, the all-in algorithm, and the location-discovery algorithm on this data set.
+
+### block_partition_test.ipynb
+The `block_partition_test.ipynb` notebook measure the accuracy in both the training and testing sets of the industrial data. It compares the predicted bookings versus the actual bookings under 100 different service region partitions.
 
 ## Seattle Dockless Bike-sharing Data Description
 
@@ -52,3 +60,5 @@ The data set records relevant booking information in a bike-sharing company in t
    - `available`: The bike is available for rent
    - `rent start`: The bike has been rented and the rental period has started
    - `rent finish`: The bike has been returned and the rental period has ended
+
+   
