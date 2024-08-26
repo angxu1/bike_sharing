@@ -272,6 +272,12 @@ def gen_sync_in_grid(rand_seed,num_position,bike_num,lambd,grid_size,beta0=1,bet
   '''
   Generate an instance of synthetic data and return all relevant booking information.
   Arrival locations are generated from a candidate grid where the size of the grid is grid_size.
+  rand_seed: random seed
+  num_position: total number of arrival locations
+  bike_num: total number of bikes
+  grid_size: grid size of the candidate location
+  beta0, beta1: MNL model parameter
+  loc_bound: bound of the bike locations and arrival locations
   '''
   np.random.seed(seed=rand_seed)
   true_pos_ind = np.random.choice(grid_size**2,num_position,replace=False)
@@ -349,13 +355,22 @@ def gen_sync_in_grid(rand_seed,num_position,bike_num,lambd,grid_size,beta0=1,bet
   return true_pos_ind,bike_num,num_records,book_bike,book_index,dist,bike_loc,all_period,num_booked,cand_loc,true_loc,position_weight
 
 def g(w,choice_prob,book_bike,book_index):
-    g = np.sum(np.log(np.sum(w.reshape(-1,1)*(choice_prob[:,book_bike+1,book_index]),axis=0)))
-    return g
+  '''
+  Concave function g(w;beta) in the implementation of MM algorithm.
+  '''
+  g = np.sum(np.log(np.sum(w.reshape(-1,1)*(choice_prob[:,book_bike+1,book_index]),axis=0)))
+  return g
 
 def h(w,choice_prob,all_period,num_booked):
-    h = num_booked * np.log(np.sum((1-np.sum(w.reshape(-1,1)*choice_prob[:,0,:],axis=0))*all_period))
-    return h
+  '''
+  Concave function h(w;beta) in the implementation of MM algorithm.
+  '''
+  h = num_booked * np.log(np.sum((1-np.sum(w.reshape(-1,1)*choice_prob[:,0,:],axis=0))*all_period))
+  return h
 
 def find_grad_g(w,choice_prob,book_bike,book_index):
-    grad_g = np.sum(choice_prob[:,book_bike+1,book_index]/np.sum(w.reshape(-1,1)*(choice_prob[:,book_bike+1,book_index]),axis=0),axis=1)
-    return grad_g
+  '''
+  Calculate the gradient of function g.
+  '''
+  grad_g = np.sum(choice_prob[:,book_bike+1,book_index]/np.sum(w.reshape(-1,1)*(choice_prob[:,book_bike+1,book_index]),axis=0),axis=1)
+  return grad_g

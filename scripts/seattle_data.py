@@ -197,15 +197,17 @@ def findbetaw1_EM(cur_locnum,loc,beta0,beta1,bike_num,num_records,bike_loc,book_
   return beta1, w[-1]
 
 def findlkd_beta(beta0,beta1_new,p_old,p_olds,dist_old,s,book_index,book_bike,w_old,bike_num,num_records,num_booked,all_period,cur_locnum):
+  '''
+  Find the likelihood under a new value of beta1.
+  '''
   choice_prob_new = findchoice_prob(cur_locnum,dist_old,beta0,beta1_new,num_records,bike_num)
   beta1_em_lkd = np.sum(np.sum(p_olds*np.log(choice_prob_new[:,book_bike+1,book_index]),axis=1)+
                         num_booked/s*np.sum(p_old[:,0,:]*w_old.reshape(-1,1)*np.log(choice_prob_new[:,0,:])*all_period,axis=1))
-  #print(beta1_new,beta1_em_lkd)
   return beta1_em_lkd
 
 def time_in_hours(time_str):
   '''
-  Convert a time string into number of hours
+  Convert a time string into hours.
   '''
   # Parse the time string (including milliseconds)
   time_obj = datetime.strptime(time_str, '%H:%M:%S.%f')
@@ -214,20 +216,20 @@ def time_in_hours(time_str):
   return hours
 
 def is_time_in_range(time_str,start_hours,end_hours):
+  '''
+  Check whether the input time is in [start_hours,end_hours].
+  '''
   time_hours = time_in_hours(time_str)
   return start_hours <= time_hours <= end_hours
 
-def change_df_time_format(df):
-  df = df.sort_values(by=['time'])
-  initial_time = np.datetime64('2019-08-01 00:00:00')
-  all_time = np.array([np.datetime64(date_str) for date_str in df['time']])
-  all_time = np.append([initial_time], all_time)
-  book_finish_time = (all_time[1:] - initial_time) / np.timedelta64(1, 's')
-  book_finish_time
-  df['time'] = book_finish_time
-  return df
-
 def create_bike_loc(df, lng0, lat0,total_day,initial_time = np.datetime64('2019-07-01 00:00:00')):
+  '''
+  Extract locational information of bikes from a dataframe.
+  df: dataframe containing locational information of bikes
+  lng0, lat0: an array that contains the longitude/latitude of bikes' initial locations
+  total_day: number of days recorded
+  initial_time: starting time of the data
+  '''
   sec_day = 86400
   total_period = total_day*sec_day
   unique_times = np.sort(df['time'].unique())
@@ -277,13 +279,18 @@ def create_bike_loc(df, lng0, lat0,total_day,initial_time = np.datetime64('2019-
 # For each day, initialize the bike pattern as the most recent record 
 
 def extract_period_data(bike_loc,all_period,book_time,book_finish_time,book_index,bike_index,total_day,time_interval):
+  '''
+  Extract locational information of bikes during a specific observation period.
+
+
+  '''
+
   # time_interval: [start hour in a day,end hour in a day)
   sec_day = 86400
   sec_hour = 3600
   hour_day = 24
   time_diff = time_interval[1]-time_interval[0]
   total_period = total_day*sec_hour*time_diff
-  #df_coor = df_coor
   def check_valid_time(time):
       time_hour = (time/sec_hour)%hour_day
       return ((time_hour>=time_interval[0]) & (time_hour<time_interval[1]))
@@ -310,7 +317,6 @@ def extract_period_data(bike_loc,all_period,book_time,book_finish_time,book_inde
   book_finish_time_in_interval = book_finish_time[valid_time]
   book_finish_time_in_interval = np.array([t%sec_day+int(t/sec_day)*sec_hour*time_diff for t in book_finish_time_in_interval])      
   book_finish_time_in_interval -= time_interval[0]*sec_hour
-  #print(np.all(np.isin(book_time_in_interval,book_finish_time_in_interval)))
   bike_loc_in_interval = bike_loc[np.append([False],valid_time),:,:]
   bike_loc_in_interval = np.insert(bike_loc_in_interval,0,axis=0,values=bike_loc_in_interval[0,:,:])
   book_index_in_interval = np.array([np.where(book_finish_time_in_interval == element)[0][-1] for element in book_time_in_interval])
@@ -323,6 +329,9 @@ def extract_period_data(bike_loc,all_period,book_time,book_finish_time,book_inde
 def find_bike_index(bike_loc,polygon_sets,num_block):
   '''
   Find which block each bike is situated in at each moment.
+  bike_loc: a 3d array (time step, bike index, longitude or latitude) that contains the locational information of bikes
+  polygon_sets: a list of blocks
+  num_block: number of blocks contained in the polygon
   '''
   num_rec_test, num_bike_test,_ = bike_loc.shape
   bike_poly_index = -np.ones((num_rec_test,num_bike_test),dtype=int)
@@ -385,6 +394,9 @@ def process_bike_data(df,enforce_seq=True):
   return df, initial_positions
 
 def reset_bike_index(df):
+  '''
+  Reset the bike index in a dataframe to eliminate duplicates.
+  '''
   unique_bike_ids = df['bike_id'].unique()
   bike_id_map = {old_id: new_id for new_id, old_id in enumerate(unique_bike_ids, start=1)}
   df['bike_id'] = df['bike_id'].map(bike_id_map)

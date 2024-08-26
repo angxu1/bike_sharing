@@ -2,16 +2,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.optimize import linprog
 
-def plot_density(loc,w,loc_bound):
-    '''
-    Make a scatter plot of arrival locations.
-    '''
-    fig, ax = plt.subplots()
-    cax = ax.scatter(loc[:,0], loc[:,1], c=w, s=100)
-    ax.set_xlim(-loc_bound,loc_bound)
-    ax.set_ylim(-loc_bound,loc_bound)
-    fig.colorbar(cax)
-    plt.show()
 
 def find_wasserstein(loc1,loc2,w1,w2):
     '''
