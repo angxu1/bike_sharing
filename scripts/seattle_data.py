@@ -40,72 +40,10 @@ def getgeodist_arr(lng1,lng2,lat1,lat2):
   c = 2 * 6373 * np.arctan2(np.sqrt(a), np.sqrt(1 - a))
   return c
 
-# 1. Reset bike_id
-# 2. Extract data for the initial bike position information
-# 3. Remove rows with rent_finish before rent_start
-def recon_df(df):
-    '''
-    This function performs the following three tasks on the input dataframe:
-    1. Reset bike_id
-    2. Extract data for the initial bike position information
-    3. Remove rows with rent_finish before rent_start
-    '''
-    df = df.reset_index(drop=True)
-    reind = 0
-    rent_fin = True
-    delrow = np.array([])
-    tempdel = 0
-    for i in range(df.shape[0]-1):
-        if df['state'][i] == "rent_start":
-            if rent_fin:
-                rent_fin = False
-                tempdel = i
-            else:
-                delrow = np.append(delrow, i)
-        elif df['state'][i] == "rent_finish":
-            if not rent_fin:
-                rent_fin = True
-            else:
-                delrow = np.append(delrow, i)
-        cur_id = df.at[i,'bike_id']
-        df.at[i,'bike_id'] = reind
-        if df['bike_id'][i+1] != cur_id:
-            reind = reind + 1
-            if not rent_fin:
-                delrow = np.append(delrow, tempdel)
-            rent_fin = True
-    df.at[df.shape[0]-1,'bike_id'] = reind
-    i = df.shape[0]-1
-    if df['state'][i] == "rent_start":
-        delrow = np.append(delrow, i)
-    elif df['state'][i] == "rent_finish":
-        if not rent_fin:
-            rent_fin = True
-        else:
-            delrow = np.append(delrow, i)
-    df = df.drop(delrow)
-    df_init = df.drop_duplicates(subset=['bike_id'])
-    return df,df_init
-
-def rent_record(df):
-    df_rent = df.sort_values(by='time')
-    df_rent = df_rent[df_rent['state']!='available'].reset_index(drop=True)
-    return df_rent
-
-def caldist2(loc,num_position,df_rent,num_records,bike_num,x0,y0):
-  loc = loc.reshape(1,-1,2)
-  dist = np.zeros((num_position,num_records,bike_num))
-  dist[:,0,:] = getgeodist_arr(x0,loc[0,:,0],y0,loc[0,:,1])
-  for i in range(1,num_records):
-    dist[:,i,:] = dist[:,i-1,:]
-    cur_rec = df_rent.loc[i-1,:]
-    if cur_rec['state']=='rent_start':
-      dist[:,i,cur_rec['bike_id']] = np.inf
-    else:
-      dist[:,i,cur_rec['bike_id']] = getgeodist(cur_rec['lng'],loc[0,:,0],cur_rec['lat'],loc[0,:,1])
-  return dist
-
 def caldist_geo(loc,bike_loc):
+  '''
+  Calculate the geometric distance between arrival locations and bike locations.
+  '''
   loc = loc.reshape(-1,2)
   bike_num = bike_loc.shape[1]
   num_position = loc.shape[0]
@@ -163,8 +101,8 @@ def findw_EM(cur_locnum,loc,bike_num,num_records,book_bike,num_booked,bike_loc,
 
 def findbetaw1_EM(cur_locnum,loc,beta0,beta1,bike_num,num_records,bike_loc,book_bike,num_booked,book_index,all_period,T,thres=5e-3,prior_weight=None):
   '''
-  Jointly estimate the weight vector w and the MNL model parameter beta1 using the EM algorithm. To make the algorithm more efficient, we search five values within
-  the neighborhood of the current estimation.
+  Jointly estimate the weight vector w and the MNL model parameter beta1 using the EM algorithm. To make the algorithm more efficient, 
+  we search five values within the neighborhood of the current estimation.
   '''
   w = np.random.uniform(0,1,cur_locnum)
   w = w/np.sum(w)
@@ -193,7 +131,6 @@ def findbetaw1_EM(cur_locnum,loc,beta0,beta1,bike_num,num_records,bike_loc,book_
                                                     all_period,cur_locnum) for b in beta1_cand])]
     beta1 = beta1_star
     w_diff = np.sum(np.abs(w[-1]-w[-2]))
-    #print(w_diff,beta1)
   return beta1, w[-1]
 
 def findlkd_beta(beta0,beta1_new,p_old,p_olds,dist_old,s,book_index,book_bike,w_old,bike_num,num_records,num_booked,all_period,cur_locnum):
@@ -276,13 +213,10 @@ def create_bike_loc(df, lng0, lat0,total_day,initial_time = np.datetime64('2019-
 
   return bike_loc,all_period,book_time,book_finish_time,book_index,bike_index
 
-# For each day, initialize the bike pattern as the most recent record 
 
 def extract_period_data(bike_loc,all_period,book_time,book_finish_time,book_index,bike_index,total_day,time_interval):
   '''
   Extract locational information of bikes during a specific observation period.
-
-
   '''
 
   # time_interval: [start hour in a day,end hour in a day)
@@ -292,6 +226,9 @@ def extract_period_data(bike_loc,all_period,book_time,book_finish_time,book_inde
   time_diff = time_interval[1]-time_interval[0]
   total_period = total_day*sec_hour*time_diff
   def check_valid_time(time):
+      '''
+      Check whether the time is in the observation period
+      '''
       time_hour = (time/sec_hour)%hour_day
       return ((time_hour>=time_interval[0]) & (time_hour<time_interval[1]))
   
@@ -356,7 +293,11 @@ def find_bike_index(bike_loc,polygon_sets,num_block):
       
   
 def filter_bikes_in_region(df, lng1, lng2, lat1, lat2):
-  # Filter for bookings within the region
+  '''
+  Filter for bookings within the region
+  df: Input dataframe
+  lng1,lng2,lat1,lat2: longitudes and latitudes for vertices of a rectangular region. Assume lng1<lng2, lat1<lat2.
+  '''
   df = df[(df['lng'] >= lng1) & (df['lng'] <= lng2) & (df['lat'] >= lat1) & (df['lat'] <= lat2)]
   return df
 
@@ -365,7 +306,7 @@ def process_bike_data(df,enforce_seq=True):
   This function executes three tasks.
   Task 1: Reset bike_id
   Task 2: Extract initial bike position
-  Task 3: Enforce rent_start/rent_finish sequence
+  Task 3: Enforce rent_start/rent_finish sequence (if enforce_seq=True)
   '''
   def check_sequence(group):
       valid_rows = []
