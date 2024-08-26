@@ -30,7 +30,7 @@ Once you install all the required packages, you can open the Jupyter notebooks a
 The `locations_sim_EM_MM.ipynb` notebook implements the EM algorithm and the MM algorithm in estimating the location weights given that the underlying locations are in a large candidate location set. 
 
 ### EM_MM_comparison.ipynb
-The `EM_MM_comparison.ipynb` notebook compares the performance between the EM and MM algorithms. The notebook reproduces table 1 in the paper.
+The `EM_MM_comparison.ipynb` notebook compares the performance between the EM and MM algorithms. The notebook reproduces Table 1 in the paper.
 
 ### locations_sim_allin.ipynb
 
