@@ -2,7 +2,6 @@ import numpy as np
 from tqdm import tqdm
 import warnings
 
-
 def gen_loc(loc_bound,grid_size,s=1,coor=np.zeros(2)):
   '''
   Generate a Cartesian grid of locations.

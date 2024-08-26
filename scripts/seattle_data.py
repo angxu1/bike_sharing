@@ -203,54 +203,10 @@ def findlkd_beta(beta0,beta1_new,p_old,p_olds,dist_old,s,book_index,book_bike,w_
   #print(beta1_new,beta1_em_lkd)
   return beta1_em_lkd
 
-
-def get_tourist_attractions(api_key, city="Seattle", type="tourist_attraction"):
-  endpoint_url = "https://maps.googleapis.com/maps/api/place/textsearch/json"
-  search_query = f"{type} in {city}"
-
-  params = {
-      'query': search_query,
-      'key': api_key
-  }
-
-  response = requests.get(endpoint_url, params=params).json()
-
-  if response['status'] == 'OK':
-      attractions = []
-      for result in response['results']:
-          attractions.append({
-              'name': result['name'],
-              'location': result['geometry']['location']
-          })
-      return attractions
-  else:
-      print(f"Error: {response['status']}")
-      return None
-
-def get_metro_stations(api_key, city="Seattle", type="subway_station"):
-  endpoint_url = "https://maps.googleapis.com/maps/api/place/textsearch/json"
-  search_query = f"{type} in {city}"
-
-  params = {
-      'query': search_query,
-      'key': api_key
-  }
-
-  response = requests.get(endpoint_url, params=params).json()
-
-  if response['status'] == 'OK':
-      stations = []
-      for result in response['results']:
-          stations.append({
-              'name': result['name'],
-              'location': result['geometry']['location']
-          })
-      return stations
-  else:
-      print(f"Error: {response['status']}")
-      return None
-
 def time_in_hours(time_str):
+  '''
+  Convert a time string into number of hours
+  '''
   # Parse the time string (including milliseconds)
   time_obj = datetime.strptime(time_str, '%H:%M:%S.%f')
   # Convert to hours (including milliseconds)
@@ -294,7 +250,6 @@ def create_bike_loc(df, lng0, lat0,total_day,initial_time = np.datetime64('2019-
   bike_num = len(bike_ids)
   num_records = len(all_time)
   bike_loc = np.zeros((num_records, bike_num, 2)) 
-  print(num_records,unique_times.shape,all_time.shape)
   for i in range(num_records):
       for j in range(bike_num):
           bike_loc[i,j] = [lng0[j], lat0[j]]
@@ -334,9 +289,6 @@ def extract_period_data(bike_loc,all_period,book_time,book_finish_time,book_inde
       return ((time_hour>=time_interval[0]) & (time_hour<time_interval[1]))
   
   alt_time = np.arange(0,total_day)*sec_day+sec_hour*time_interval[0] # Alternative time at the beginning of each time interval
-  # Add a df to reserve lng,lat 
-  
-  #df_coor = df_coor[check_valid_time(t) for t in df_coor['time']]
   # Compute the index of the alternative time in the book_finish_time array
   alt_index = np.zeros(total_day,dtype=int)
   for i in range(total_day):
@@ -369,6 +321,9 @@ def extract_period_data(bike_loc,all_period,book_time,book_finish_time,book_inde
       book_index_in_interval,bike_index_in_interval,all_period_in_interval
       
 def find_bike_index(bike_loc,polygon_sets,num_block):
+  '''
+  Find which block each bike is situated in at each moment.
+  '''
   num_rec_test, num_bike_test,_ = bike_loc.shape
   bike_poly_index = -np.ones((num_rec_test,num_bike_test),dtype=int)
   for i in tqdm(range(num_rec_test)):
@@ -397,9 +352,12 @@ def filter_bikes_in_region(df, lng1, lng2, lat1, lat2):
   return df
 
 def process_bike_data(df,enforce_seq=True):
-  # Task 1: Reset bike_id
-  # Task 2: Extract initial bike position
-  # Task 3: Enforce rent_start/rent_finish sequence
+  '''
+  This function executes three tasks.
+  Task 1: Reset bike_id
+  Task 2: Extract initial bike position
+  Task 3: Enforce rent_start/rent_finish sequence
+  '''
   def check_sequence(group):
       valid_rows = []
       last_rent_start_index = None
@@ -433,8 +391,54 @@ def reset_bike_index(df):
   return df
 
 def whether_in_land(gdf_naive,loc_cor,num_block):
+    '''
+    Check whether the locations are in the land area. If the location is contained in any census tract,
+    then it is identified as `in land`. 
+    gdf_naive: a geopandas dataframe that contains census tract information
+    loc_cor: a set of locations to be checked whether they are in land
+    num_block: total number of census tracts
+    '''
     in_land = False
     for j in range(1,num_block):
         if gdf_naive['geometry'][j].contains(Point(loc_cor[0],loc_cor[1])):
             in_land = True
     return in_land
+
+def combine_close_locations(df):
+    '''
+    Combine locations in proximity to give a clear view in visualization.
+    '''
+    combined_locations = []
+
+    # Convert DataFrame columns to NumPy arrays for efficient computation
+    lats = df['lat'].to_numpy()
+    lngs = df['lng'].to_numpy()
+    weights = df['weight'].to_numpy()
+    stock_out_ratios = df['stock_out_ratio'].to_numpy()
+    avg_dists = df['avg_dist'].to_numpy()
+    combined = set()
+
+    for i in range(len(df)):
+        if i in combined:
+            continue
+
+        # Initialize combined location data with the current row's data
+        lat, lng, weight,stock_out_ratio,avg_dist = lats[i], lngs[i], weights[i], stock_out_ratios[i], avg_dists[i]
+
+        for j in range(i+1, len(df)):
+            if j in combined:
+                continue
+
+            # Calculate Euclidean distance
+            dist = np.sqrt((lats[i] - lats[j])**2 + (lngs[i] - lngs[j])**2)
+            
+            if dist < 1e-3:
+                # Combine locations
+                stock_out_ratio = (stock_out_ratio * weight + stock_out_ratios[j] * weights[j]) / (weight + weights[j])
+                avg_dist = (avg_dist * weight + avg_dists[j] * weights[j]) / (weight + weights[j])
+                weight += weights[j]
+                combined.add(j)
+
+        combined_locations.append([lat, lng, weight,stock_out_ratio,avg_dist])
+
+    return pd.DataFrame(combined_locations, columns=['lat', 'lng', 'weight','stock_out_ratio','avg_dist'])
