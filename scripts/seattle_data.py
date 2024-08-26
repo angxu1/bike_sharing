@@ -357,6 +357,19 @@ def whether_in_land(gdf_naive,loc_cor,num_block):
             in_land = True
     return in_land
 
+def get_pop_density(geo_pop_sea,cand_loc):
+    '''
+    Approximate the population density for each arrival location.
+    '''
+    geo_pop_sea = geo_pop_sea.reset_index(inplace=False)
+    w_init = np.zeros(cand_loc.shape[1])
+    for i,loc_cor in enumerate(cand_loc[0]):
+        for j,poly in enumerate(geo_pop_sea['geometry']):
+            if poly.contains(Point(loc_cor)):
+                w_init[i] = geo_pop_sea['F2020_PL_data_TOT_POP'][j]/geo_pop_sea['Shape__Area'][j]
+                break
+    return w_init/np.sum(w_init)
+
 def combine_close_locations(df):
     '''
     Combine locations in proximity to give a clear view in visualization.
