@@ -8,7 +8,7 @@ from datetime import datetime, date, time
 
 def getgeodist(lng1,lng2,lat1,lat2):
   '''
-  Compute the geometrical distance between two locations given the corresponding longitudes and latitudes
+  Compute the geometric distance between two locations given the corresponding longitudes and latitudes
   lng1,lng2: the longitude of location 1 and location 2 
   lat1,lat2: the latitude of location 1 and location 2 
   '''
@@ -22,7 +22,7 @@ def getgeodist(lng1,lng2,lat1,lat2):
 
 def getgeodist_arr(lng1,lng2,lat1,lat2):
   '''
-  Compute the geometrical distance between two locations given the corresponding longitudes and latitudes
+  Compute the geometric distance between two locations given the corresponding longitudes and latitudes
   lng1,lng2: the longitude of location 1 and location 2 
   lat1,lat2: the latitude of location 1 and location 2 
   '''
