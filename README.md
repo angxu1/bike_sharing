@@ -1,7 +1,7 @@
 # A Locational Demand Model for Bike-Sharing
 
 ## Project Description
-This repository contains relevant source code to reproduce all experiments in the paper [A Locational Demand Model for Bike-sharing](https://pubsonline.informs.org/doi/10.1287/msom.2023.0306) published at *Manufacturing & Service Operations Management*. If you use any of the material here, please include a reference to the paper and this webpage.
+This repository contains relevant source code to reproduce all experiments in the paper [A Locational Demand Model for Bike-sharing](https://pubsonline.informs.org/doi/10.1287/msom.2023.0306) published in *Manufacturing & Service Operations Management*. If you use any of the material here, please include a reference to the paper and this webpage.
 
 
 ## Table of Contents
